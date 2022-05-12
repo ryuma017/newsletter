@@ -1,5 +1,4 @@
 use newsletter::run;
-use reqwest::Client;
 use std::net::TcpListener;
 
 fn spawn_app() -> String {
