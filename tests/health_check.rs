@@ -1,4 +1,4 @@
-use newsletter::run;
+use newsletter::startup::run;
 use std::net::TcpListener;
 
 fn spawn_app() -> String {
