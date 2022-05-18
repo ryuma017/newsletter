@@ -1,4 +1,5 @@
 name: newsletter
+
 region: fra
 services:
   - name: newsletter
@@ -15,3 +16,10 @@ services:
     instance_size_slug: basic-xxs
     routes:
       - path: /
+
+databases:
+  - engine: PG
+    name: newsletter
+    num_nodes: 1
+    size: db-s-dev-database
+    version: "14"
