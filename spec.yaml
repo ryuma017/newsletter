@@ -1,8 +1,8 @@
-name: newsletter
+name: email-newsletter
 
 region: fra
 services:
-  - name: newsletter
+  - name: email-newsletter
     dockerfile_path: Dockerfile
     source_dir: .
     github:
@@ -35,7 +35,7 @@ services:
 
 databases:
   - engine: PG
-    name: newsletter-db
+    name: newsletter
     num_nodes: 1
     size: db-s-dev-database
     version: "12"
