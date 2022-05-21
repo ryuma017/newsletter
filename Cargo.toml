@@ -32,6 +32,9 @@ validator = "0.15.0"
 
 [dev-dependencies]
 claim = "0.5.0"
-fake = "~2.3"
+fake = "~2.3" # 訳あり
 quickcheck = "0.9.2"
 quickcheck_macros = "0.9.1"
+tokio = { version = "1.18.2", features = ["rt", "macros"] }
+wiremock = "0.5.13"
+
