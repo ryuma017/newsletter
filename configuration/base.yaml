@@ -13,3 +13,4 @@ database:
 email_client:
   base_url: "127.0.0.1"
   sender_email: "test@ryuma017.com"
+  authorization_token: "postmark-secret-token"
