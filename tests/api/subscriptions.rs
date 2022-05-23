@@ -4,9 +4,9 @@ use crate::helpers::spawn_app;
 async fn subscribe_returns_a_200_for_valid_form_data() {
     // Arrange
     let app = spawn_app().await;
+    let body = "name=ryuma%20taguchi&email=ryuma017%40gmail.com";
 
     // Act
-    let body = "name=ryuma%20taguchi&email=ryuma017%40gmail.com";
     let response = app.post_subscriptions(body.into()).await;
 
     // Assert
