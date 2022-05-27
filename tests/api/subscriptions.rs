@@ -51,7 +51,7 @@ async fn subscribe_returns_a_200_when_fields_are_present_but_invalid() {
     // Arrange
     let app = spawn_app().await;
     let test_cases = vec![
-        ("name=&email=ryuma017%40gmail.com", "empty_name"),
+        ("name=&email=ryuma017%40gmail.com", "empty name"),
         ("name=Ryuma&email=", "empty email"),
         ("name=Ryuma&email=definitely-not-an-email", "invalid email"),
     ];
