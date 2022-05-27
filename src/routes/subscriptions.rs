@@ -124,7 +124,10 @@ impl std::fmt::Debug for StoreTokenError {
 
 impl std::fmt::Display for StoreTokenError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "A database error was encountered while trying to store a subscription token.")
+        write!(
+            f,
+            "A database error was encountered while trying to store a subscription token."
+        )
     }
 }
 
@@ -199,7 +202,10 @@ fn generate_subscription_token() -> String {
         .collect()
 }
 
-fn error_chain_fmt(e: &impl std::error::Error, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+fn error_chain_fmt(
+    e: &impl std::error::Error,
+    f: &mut std::fmt::Formatter<'_>,
+) -> std::fmt::Result {
     writeln!(f, "{}\n", e)?;
     let mut current = e.source();
     while let Some(cause) = current {
