@@ -37,6 +37,29 @@ impl TryFrom<FormData> for NewSubscriber {
 //     }
 // }
 
+#[derive(thiserror::Error)]
+pub enum SubscribeError {
+    #[error("{0}")]
+    ValidationError(String),
+    #[error(transparent)]
+    UnexpectedError(#[from] anyhow::Error),
+}
+
+impl ResponseError for SubscribeError {
+    fn status_code(&self) -> StatusCode {
+        match self {
+            SubscribeError::ValidationError(_) => StatusCode::BAD_REQUEST,
+            SubscribeError::UnexpectedError(_) => StatusCode::INTERNAL_SERVER_ERROR,
+        }
+    }
+}
+
+impl std::fmt::Debug for SubscribeError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        error_chain_fmt(self, f)
+    }
+}
+
 #[tracing::instrument(
     name = "Adding a new subscriber",
     skip(form, pool, email_client, base_url),
@@ -87,29 +110,6 @@ fn generate_subscription_token() -> String {
         .collect()
 }
 
-#[derive(thiserror::Error)]
-pub enum SubscribeError {
-    #[error("{0}")]
-    ValidationError(String),
-    #[error(transparent)]
-    UnexpectedError(#[from] anyhow::Error),
-}
-
-impl ResponseError for SubscribeError {
-    fn status_code(&self) -> StatusCode {
-        match self {
-            SubscribeError::ValidationError(_) => StatusCode::BAD_REQUEST,
-            SubscribeError::UnexpectedError(_) => StatusCode::INTERNAL_SERVER_ERROR,
-        }
-    }
-}
-
-impl std::fmt::Debug for SubscribeError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        error_chain_fmt(self, f)
-    }
-}
-
 #[tracing::instrument(
     name = "Saving new subscriber details in the database",
     skip(new_subscriber, transaction)
@@ -130,11 +130,7 @@ pub async fn insert_subscriber(
         Utc::now()
     )
     .execute(transaction)
-    .await
-    .map_err(|e| {
-        tracing::error!("Failed to execute query: {:?}", e);
-        e
-    })?;
+    .await?;
     Ok(subscriber_id)
 }
 
@@ -157,11 +153,7 @@ pub async fn store_token(
     )
     .execute(transaction)
     .await
-    .map_err(|e| {
-        tracing::error!("Failed to execute query: {:?}", e);
-        // Wrapping the underlying error
-        StoreTokenError(e)
-    })?;
+    .map_err(StoreTokenError)?;
     Ok(())
 }
 
