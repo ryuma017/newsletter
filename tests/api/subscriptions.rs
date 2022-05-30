@@ -51,7 +51,7 @@ async fn subscribe_returns_a_200_when_fields_are_present_but_invalid() {
     // Arrange
     let app = spawn_app().await;
     let test_cases = vec![
-        ("name=&email=ryuma017%40gmail.com", "empty_name"),
+        ("name=&email=ryuma017%40gmail.com", "empty name"),
         ("name=Ryuma&email=", "empty email"),
         ("name=Ryuma&email=definitely-not-an-email", "invalid email"),
     ];
@@ -144,7 +144,7 @@ async fn subscribe_fails_if_there_is_a_fatal_database_error() {
     let app = spawn_app().await;
     let body = "name=ryuma%20taguchi&email=ryuma017%40gmail.com";
     // Sabotage the database
-    sqlx::query!("ALTER TABLE subscription_tokens DROP COLUMN subscription_token;")
+    sqlx::query!("ALTER TABLE subscriptions DROP COLUMN email;")
         .execute(&app.db_pool)
         .await
         .unwrap();
