@@ -27,6 +27,18 @@ impl ResponseError for PublishError {
     }
 }
 
+#[derive(serde::Deserialize)]
+pub struct BodyData {
+    title: String,
+    content: Content,
+}
+
+#[derive(serde::Deserialize)]
+pub struct Content {
+    html: String,
+    text: String,
+}
+
 pub async fn publish_newsletter(
     body: web::Json<BodyData>,
     pool: web::Data<PgPool>,
@@ -38,7 +50,7 @@ pub async fn publish_newsletter(
             Ok(subscriber) => {
                 email_client
                     .send_email(
-                        subscriber.email,
+                        &subscriber.email,
                         &body.title,
                         &body.content.html,
                         &body.content.text,
@@ -60,18 +72,6 @@ pub async fn publish_newsletter(
     Ok(HttpResponse::Ok().finish())
 }
 
-#[derive(serde::Deserialize)]
-pub struct BodyData {
-    title: String,
-    content: Content,
-}
-
-#[derive(serde::Deserialize)]
-pub struct Content {
-    html: String,
-    text: String,
-}
-
 struct ConfirmedSubscriber {
     email: SubscriberEmail,
 }
@@ -80,12 +80,7 @@ struct ConfirmedSubscriber {
 async fn get_confirmed_subscribers(
     pool: &PgPool,
 ) -> Result<Vec<Result<ConfirmedSubscriber, anyhow::Error>>, anyhow::Error> {
-    struct Row {
-        email: String,
-    }
-
-    let rows = sqlx::query_as!(
-        Row,
+    let rows = sqlx::query!(
         r#"
     SELECT email
     FROM subscriptions
