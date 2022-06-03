@@ -1,6 +1,7 @@
-use crate::helpers::{spawn_app, ConfirmationLinks, TestApp};
 use wiremock::matchers::{any, method, path};
 use wiremock::{Mock, ResponseTemplate};
+
+use crate::helpers::{spawn_app, ConfirmationLinks, TestApp};
 
 async fn create_unconfirmed_subscriber(app: &TestApp) -> ConfirmationLinks {
     let body = "name=ryuma%20taguchi&email=ryuma017%40gmail.com";
