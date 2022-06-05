@@ -1,3 +1,4 @@
+use tokio::task::JoinHandle;
 use tracing::subscriber::set_global_default;
 use tracing::Subscriber;
 use tracing_bunyan_formatter::{BunyanFormattingLayer, JsonStorageLayer};
@@ -27,4 +28,14 @@ pub fn init_subscriber(subscriber: impl Subscriber + Send + Sync) {
     // 全ての `log` の event を subscriber にリダイレクトする
     LogTracer::init().expect("Failed to set logger.");
     set_global_default(subscriber).expect("Failed to set subscriber");
+}
+
+// trait bounds と signature は `tokio::task::spawn_blocking` のコピー
+pub fn spawn_blocking_with_tracing<F, R>(func: F) -> JoinHandle<R>
+where
+    F: FnOnce() -> R + Send + 'static,
+    R: Send + 'static,
+{
+    let current_span = tracing::Span::current();
+    tokio::task::spawn_blocking(move || current_span.in_scope(func))
 }
