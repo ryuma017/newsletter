@@ -1,0 +1,7 @@
+[advisories]
+ignore = [
+    # time: Potential segfault in the time crate.
+    # Patched >=0.2.23 but chrono crate v0.4.19 still depends on it.
+    # https://rustsec.org/advisories/RUSTSEC-2020-0071.html
+    "RUSTSEC-2020-0071",
+]
