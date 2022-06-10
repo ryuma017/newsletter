@@ -10,38 +10,6 @@ use crate::domain::SubscriberEmail;
 use crate::email_client::EmailClient;
 use crate::routes::error_chain_fmt;
 
-#[derive(thiserror::Error)]
-pub enum PublishError {
-    #[error("Authentication failed.")]
-    AuthError(#[source] anyhow::Error),
-    #[error(transparent)]
-    UnexpectedError(#[from] anyhow::Error),
-}
-
-impl std::fmt::Debug for PublishError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        error_chain_fmt(self, f)
-    }
-}
-
-impl ResponseError for PublishError {
-    fn error_response(&self) -> HttpResponse<actix_web::body::BoxBody> {
-        match self {
-            PublishError::UnexpectedError(_) => {
-                HttpResponse::new(StatusCode::INTERNAL_SERVER_ERROR)
-            }
-            PublishError::AuthError(_) => {
-                let mut response = HttpResponse::new(StatusCode::UNAUTHORIZED);
-                let header_value = HeaderValue::from_str(r#"Basic realm="publish""#).unwrap();
-                response
-                    .headers_mut()
-                    .insert(header::WWW_AUTHENTICATE, header_value);
-                response
-            }
-        }
-    }
-}
-
 #[derive(serde::Deserialize)]
 pub struct BodyData {
     title: String,
@@ -100,6 +68,38 @@ pub async fn publish_newsletter(
         }
     }
     Ok(HttpResponse::Ok().finish())
+}
+
+#[derive(thiserror::Error)]
+pub enum PublishError {
+    #[error("Authentication failed.")]
+    AuthError(#[source] anyhow::Error),
+    #[error(transparent)]
+    UnexpectedError(#[from] anyhow::Error),
+}
+
+impl std::fmt::Debug for PublishError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        error_chain_fmt(self, f)
+    }
+}
+
+impl ResponseError for PublishError {
+    fn error_response(&self) -> HttpResponse<actix_web::body::BoxBody> {
+        match self {
+            PublishError::UnexpectedError(_) => {
+                HttpResponse::new(StatusCode::INTERNAL_SERVER_ERROR)
+            }
+            PublishError::AuthError(_) => {
+                let mut response = HttpResponse::new(StatusCode::UNAUTHORIZED);
+                let header_value = HeaderValue::from_str(r#"Basic realm="publish""#).unwrap();
+                response
+                    .headers_mut()
+                    .insert(header::WWW_AUTHENTICATE, header_value);
+                response
+            }
+        }
+    }
 }
 
 fn basic_authentication(headers: &HeaderMap) -> Result<Credentials, anyhow::Error> {
