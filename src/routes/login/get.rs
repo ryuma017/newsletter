@@ -12,7 +12,6 @@ pub async fn login_form(request: HttpRequest) -> HttpResponse {
     };
     let mut response = HttpResponse::Ok()
         .content_type(ContentType::html())
-        .cookie(Cookie::build("_flash", "").max_age(Duration::ZERO).finish())
         .body(format!(
             r#"<!DOCTYPE html>
 <html lang="en">
