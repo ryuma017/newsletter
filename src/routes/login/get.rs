@@ -1,14 +1,7 @@
+use actix_web::cookie::time::Duration;
+use actix_web::cookie::Cookie;
 use actix_web::http::header::ContentType;
-use actix_web::{web, HttpRequest, HttpResponse};
-use secrecy::ExposeSecret;
-
-use crate::startup::HmacSecret;
-
-#[derive(serde::Deserialize)]
-pub struct QueryParams {
-    error: String,
-    tag: String,
-}
+use actix_web::{HttpRequest, HttpResponse};
 
 pub async fn login_form(request: HttpRequest) -> HttpResponse {
     let error_html = match request.cookie("_flash") {
@@ -19,6 +12,7 @@ pub async fn login_form(request: HttpRequest) -> HttpResponse {
     };
     HttpResponse::Ok()
         .content_type(ContentType::html())
+        .cookie(Cookie::build("_flash", "").max_age(Duration::ZERO).finish())
         .body(format!(
             r#"<!DOCTYPE html>
 <html lang="en">
