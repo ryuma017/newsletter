@@ -106,11 +106,8 @@ pub async fn run(
             .wrap(message_framework.clone())
             .route("/", web::get().to(home))
             .route("/admin/dashboard", web::get().to(admin_dashboard))
-            .route(
-                "/admin/dashboard/password",
-                web::get().to(change_password_form),
-            )
-            .route("/admin/dashboard/password", web::post().to(change_password))
+            .route("/admin/password", web::get().to(change_password_form))
+            .route("/admin/password", web::post().to(change_password))
             .route("/login", web::get().to(login_form))
             .route("/login", web::post().to(login))
             .route("/subscriptions", web::post().to(subscribe))
