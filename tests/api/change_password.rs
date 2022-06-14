@@ -60,6 +60,6 @@ async fn new_password_fields_must_match() {
     // Act - 3: Follow the redirect
     let html_page = app.get_change_password_html().await;
     assert!(html_page.contains(
-        "<p><i>You enterd two different new passwords - the field values must match.</i></p>"
+        "<p><i>You entered two different new passwords - the field values must match.</i></p>"
     ));
 }
