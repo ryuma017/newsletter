@@ -19,7 +19,11 @@ impl TypedSession {
     }
 
     pub fn get_user_id(&self) -> Result<Option<Uuid>, serde_json::Error> {
-        self.0.get::<Uuid>(Self::USER_ID_KEY)
+        self.0.get(Self::USER_ID_KEY)
+    }
+
+    pub fn logout(self) {
+        self.0.purge()
     }
 }
 
