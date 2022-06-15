@@ -23,6 +23,8 @@ jobs:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: password
           POSTGRES_DB: postgres
+        options: >-
+          --name postgres
         ports:
           - 5432:5432
       redis:
@@ -33,6 +35,15 @@ jobs:
       SQLX_VERSION: 0.5.7
       SQLX_FEATURES: postgres
     steps:
+      - name: Increase max connections
+        run: |
+          docker exec -i postgres bash << EOF
+            sed -i -e 's/max_connections = 100/max_connections = 1000/' /var/lib/postgresql/data/postgresql.conf
+            sed -i -e 's/shared_buffers = 128MB/shared_buffers = 2GB/' /var/lib/postgresql/data/postgresql.conf
+          EOF
+          docker restart --time 0 postgres
+          sleep 5
+
       - name: Checkout repository
         uses: actions/checkout@v2
 
