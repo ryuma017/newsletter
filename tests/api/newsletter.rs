@@ -146,7 +146,7 @@ async fn newsletter_creation_is_idempotent() {
         "idempotency_key": uuid::Uuid::new_v4().to_string()
     });
     let response = app.post_publish_newsletter(&newsletter_request_body).await;
-    assert_is_redirect_to(&response, "/admin/newsletter");
+    assert_is_redirect_to(&response, "/admin/newsletters");
 
     // Act - 2: Follow the redirect
     let html_page = app.get_publish_newsletter_html().await;
