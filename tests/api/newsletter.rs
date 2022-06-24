@@ -109,7 +109,7 @@ async fn users_must_be_logged_in_to_see_the_newsletter_form() {
     assert_is_redirect_to(&response, "/login");
 }
 
-#[tokio::test] // このテストなんか壊れとる。jsonのbody欠けとってもなぜか通る。なんぜ？ ハンドラが壊れてる？
+#[tokio::test]
 async fn users_must_be_logged_in_to_publish_a_newsletter() {
     // Arrange
     let app = spawn_app().await;
