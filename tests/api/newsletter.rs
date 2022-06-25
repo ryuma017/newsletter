@@ -1,17 +1,26 @@
 use std::time::Duration;
 
+use fake::faker::internet::en::SafeEmail;
+use fake::faker::name::en::Name;
+use fake::Fake;
 use wiremock::matchers::{any, method, path};
-use wiremock::{Mock, ResponseTemplate};
+use wiremock::{Mock, MockBuilder, ResponseTemplate};
 
 use crate::helpers::{assert_is_redirect_to, spawn_app, ConfirmationLinks, TestApp};
 
+fn when_sending_an_email() -> MockBuilder {
+    Mock::given(path("/email")).and(method("POST"))
+}
+
 async fn create_unconfirmed_subscriber(app: &TestApp) -> ConfirmationLinks {
-    let body = "name=ryuma%20taguchi&email=ryuma017%40gmail.com";
+    let name: String = Name().fake();
+    let email: String = SafeEmail().fake();
+    let body = serde_urlencoded::to_string(&[("name", name), ("email", email)]).unwrap();
 
     let _mock_guard = Mock::given(path("/email"))
         .and(method("POST"))
         .respond_with(ResponseTemplate::new(200))
-        .named("Create unconfirmed subscriber")
+        .named("&Create unconfirmed subscriber")
         .expect(1)
         .mount_as_scoped(&app.email_server)
         .await;
@@ -200,4 +209,48 @@ async fn concurrent_form_submission_is_handled_gracefully() {
     );
 
     // Mock verifies on Drop that admin users have sent the newsletter email **once**
+}
+
+#[tokio::test]
+async fn transient_errors_do_not_cause_duplicate_deliveries_on_retries() {
+    // Arrage
+    let app = spawn_app().await;
+    let newsletter_request_body = serde_json::json!({
+        "title": "Newsletter title",
+        "text_content": "Newsletter body as plain text",
+        "html_content": "<p>Newsletter body as HTML</p>",
+        "idempotency_key": uuid::Uuid::new_v4().to_string()
+    });
+    create_confirmed_subscriber(&app).await;
+    create_confirmed_subscriber(&app).await;
+    app.test_user.login(&app).await;
+
+    // Submit newsletter form
+    when_sending_an_email()
+        .respond_with(ResponseTemplate::new(200))
+        .up_to_n_times(1)
+        .expect(1)
+        .mount(&app.email_server)
+        .await;
+    when_sending_an_email()
+        .respond_with(ResponseTemplate::new(500))
+        .up_to_n_times(1)
+        .expect(1)
+        .mount(&app.email_server)
+        .await;
+
+    let response = app.post_publish_newsletter(&newsletter_request_body).await;
+    assert_eq!(response.status().as_u16(), 500);
+
+    // Retry submitting the form
+    when_sending_an_email()
+        .respond_with(ResponseTemplate::new(200))
+        .expect(1)
+        .named("Delivery retry")
+        .mount(&app.email_server)
+        .await;
+    let response = app.post_publish_newsletter(&newsletter_request_body).await;
+    assert_eq!(response.status().as_u16(), 303);
+
+    // Mock verifies on Drop that users did not send out duplicates
 }
