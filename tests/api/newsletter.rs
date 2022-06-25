@@ -17,14 +17,13 @@ async fn create_unconfirmed_subscriber(app: &TestApp) -> ConfirmationLinks {
     let email: String = SafeEmail().fake();
     let body = serde_urlencoded::to_string(&[("name", name), ("email", email)]).unwrap();
 
-    let _mock_guard = Mock::given(path("/email"))
-        .and(method("POST"))
+    let _mock_guard = when_sending_an_email()
         .respond_with(ResponseTemplate::new(200))
         .named("&Create unconfirmed subscriber")
         .expect(1)
         .mount_as_scoped(&app.email_server)
         .await;
-    app.post_subscriptions(body.into())
+    app.post_subscriptions(body)
         .await
         .error_for_status()
         .unwrap();
@@ -85,8 +84,7 @@ async fn newsletters_are_delivered_to_confirmed_subscribers() {
     create_confirmed_subscriber(&app).await;
     app.test_user.login(&app).await;
 
-    Mock::given(path("/email"))
-        .and(method("POST"))
+    when_sending_an_email()
         .respond_with(ResponseTemplate::new(200))
         .expect(1)
         .mount(&app.email_server)
@@ -145,8 +143,7 @@ async fn newsletter_creation_is_idempotent() {
     create_confirmed_subscriber(&app).await;
     app.test_user.login(&app).await;
 
-    Mock::given(path("/email"))
-        .and(method("POST"))
+    when_sending_an_email()
         .respond_with(ResponseTemplate::new(200))
         .expect(1)
         .mount(&app.email_server)
@@ -184,8 +181,7 @@ async fn concurrent_form_submission_is_handled_gracefully() {
     create_confirmed_subscriber(&app).await;
     app.test_user.login(&app).await;
 
-    Mock::given(path("/email"))
-        .and(method("POST"))
+    when_sending_an_email()
         .respond_with(ResponseTemplate::new(200).set_delay(Duration::from_secs(2)))
         .expect(1)
         .mount(&app.email_server)
