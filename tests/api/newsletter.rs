@@ -73,7 +73,11 @@ async fn newsletters_are_not_delivered_to_unconfirmed_subscribers() {
 
     // Act - 2: Follow the redirect
     let html_page = app.get_publish_newsletter_html().await;
-    assert!(html_page.contains("<p><i>The newsletter issue has been published.</i></p>"));
+    assert!(html_page.contains(
+        "<p><i>The newsletter issue has been accepted \
+        - emails will go out shortly."
+    ));
+    app.dispatch_all_pending_emails().await;
     // Mock verifies on Drop that we haven't sent the newsletter email
 }
 
@@ -102,7 +106,11 @@ async fn newsletters_are_delivered_to_confirmed_subscribers() {
 
     // Act - 2: Follow the redirect
     let html_page = app.get_publish_newsletter_html().await;
-    assert!(html_page.contains("<p><i>The newsletter issue has been published.</i></p>"));
+    assert!(html_page.contains(
+        "<p><i>The newsletter issue has been accepted \
+        - emails will go out shortly.</i></p>"
+    ));
+    app.dispatch_all_pending_emails().await;
     // Mock verifies on Drop that we have sent the newsletter email
 }
 
@@ -161,7 +169,11 @@ async fn newsletter_creation_is_idempotent() {
 
     // Act - 2: Follow the redirect
     let html_page = app.get_publish_newsletter_html().await;
-    assert!(html_page.contains("<p><i>The newsletter issue has been published.</i></p>"));
+    assert!(html_page.contains(
+        "<p><i>The newsletter issue has been accepted \
+        - emails will go out shortly.</i></p>"
+    ));
+    app.dispatch_all_pending_emails().await;
 
     // Act -3: Submit newsltter form **again**
     let response = app.post_publish_newsletter(&newsletter_request_body).await;
@@ -169,7 +181,11 @@ async fn newsletter_creation_is_idempotent() {
 
     // Act - 4: Follow the redirect
     let html_page = app.get_publish_newsletter_html().await;
-    assert!(html_page.contains("<p><i>The newsletter issue has been published.</i></p>"));
+    assert!(html_page.contains(
+        "<p><i>The newsletter issue has been accepted \
+        - emails will go out shortly.</i></p>"
+    ));
+    app.dispatch_all_pending_emails().await;
 
     // Mock verifies on Drop that admin users have sent the newsletter email **once**
 }
@@ -203,50 +219,7 @@ async fn concurrent_form_submission_is_handled_gracefully() {
         response1.text().await.unwrap(),
         response2.text().await.unwrap()
     );
+    app.dispatch_all_pending_emails().await;
 
     // Mock verifies on Drop that admin users have sent the newsletter email **once**
-}
-
-#[tokio::test]
-async fn transient_errors_do_not_cause_duplicate_deliveries_on_retries() {
-    // Arrage
-    let app = spawn_app().await;
-    let newsletter_request_body = serde_json::json!({
-        "title": "Newsletter title",
-        "text_content": "Newsletter body as plain text",
-        "html_content": "<p>Newsletter body as HTML</p>",
-        "idempotency_key": uuid::Uuid::new_v4().to_string()
-    });
-    create_confirmed_subscriber(&app).await;
-    create_confirmed_subscriber(&app).await;
-    app.test_user.login(&app).await;
-
-    // Submit newsletter form
-    when_sending_an_email()
-        .respond_with(ResponseTemplate::new(200))
-        .up_to_n_times(1)
-        .expect(1)
-        .mount(&app.email_server)
-        .await;
-    when_sending_an_email()
-        .respond_with(ResponseTemplate::new(500))
-        .up_to_n_times(1)
-        .expect(1)
-        .mount(&app.email_server)
-        .await;
-
-    let response = app.post_publish_newsletter(&newsletter_request_body).await;
-    assert_eq!(response.status().as_u16(), 500);
-
-    // Retry submitting the form
-    when_sending_an_email()
-        .respond_with(ResponseTemplate::new(200))
-        .expect(1)
-        .named("Delivery retry")
-        .mount(&app.email_server)
-        .await;
-    let response = app.post_publish_newsletter(&newsletter_request_body).await;
-    assert_eq!(response.status().as_u16(), 303);
-
-    // Mock verifies on Drop that users did not send out duplicates
 }
