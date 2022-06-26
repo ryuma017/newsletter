@@ -5,4 +5,4 @@ CREATE TABLE newsletter_issues (
     html_content TEXT NOT NULL,
     published_at TEXT NOT NULL,
     PRIMARY KEY(newsletter_issue_id)
-)
+);
