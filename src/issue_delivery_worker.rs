@@ -2,6 +2,7 @@ use sqlx::{PgPool, Postgres, Transaction};
 use tracing::{field::display, Span};
 use uuid::Uuid;
 
+use crate::domain::SubscriberEmail;
 use crate::email_client::EmailClient;
 
 #[tracing::instrument(
@@ -16,12 +17,39 @@ async fn try_execute_task(pool: &PgPool, email_client: &EmailClient) -> Result<(
         Span::current()
             .record("newsletter_issue_id", &display(issue_id))
             .record("subscriber_email", &display(&email));
-        // TODO: send email
+        match SubscriberEmail::parse(email.clone()) {
+            Ok(email) => {
+                let issue = get_issue(pool, issue_id).await?;
+                if let Err(e) = email_client
+                    .send_email(
+                        &email,
+                        &issue.title,
+                        &issue.html_content,
+                        &issue.text_content,
+                    )
+                    .await
+                {
+                    tracing::error!(
+                        error.cause_chain = ?e,
+                        error.message = %e,
+                        "Failed to deliver issue to a confirmed subscriber. Skipping."
+                    );
+                }
+            }
+            Err(e) => {
+                tracing::error!(
+                    error.cause_chain = ?e,
+                    error.massage = %e,
+                    "Skipping a confirmed subscriber. Their stored contact details are invalid."
+                );
+            }
+        }
         delete_task(transaction, issue_id, &email).await?;
     }
     Ok(())
 }
 
+#[allow(dead_code)]
 type PgTransaction = Transaction<'static, Postgres>;
 
 #[tracing::instrument(skip_all)]
@@ -73,6 +101,7 @@ async fn delete_task(
     Ok(())
 }
 
+#[allow(dead_code)]
 struct NewsletterIssue {
     title: String,
     text_content: String,

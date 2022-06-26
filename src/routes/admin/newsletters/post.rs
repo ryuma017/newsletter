@@ -6,7 +6,6 @@ use sqlx::{PgPool, Postgres, Transaction};
 use uuid::Uuid;
 
 use crate::authentication::UserId;
-use crate::domain::SubscriberEmail;
 use crate::idempotency::{save_response, try_processing, IdempotencyKey, NextAction};
 use crate::utils::{e400, e500, see_other};
 
